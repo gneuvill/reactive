@@ -16,3 +16,5 @@ hs_err*.log
 jrockit.*.dump
 *.orig
 .settings
+reactive-core/.cache
+reactive-web/.cache
