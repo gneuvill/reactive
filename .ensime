@@ -1,0 +1,8 @@
+(
+  :use-sbt t
+  :sbt-subprojects (
+     (:name "reactive-core")
+     (:name "reactive-web")
+     (:name "reactive-web-demo")
+  )
+)
