@@ -145,4 +145,5 @@ trait JsForwardable[T <: JsAny] {
     canForward.forward(this, target)
     this
   }
+
 }
