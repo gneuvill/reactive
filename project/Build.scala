@@ -30,7 +30,8 @@ object ReactiveBuild extends Build {
     ),
     checksums in update := Nil,
     scalacOptions += "-deprecation",
-    crossScalaVersions := List("2.8.1", "2.9.0-1", "2.9.1")
+    crossScalaVersions := List("2.8.1", /*"2.9.0-1",*/ "2.9.1"),
+    testOptions in Test += Tests.Argument("-oF")
   )
   val publishingDefaults = defaults ++ Seq(
     publishTo <<= (version) { version: String =>
@@ -44,8 +45,6 @@ object ReactiveBuild extends Build {
   )
 
 
-  val liftVersion = "2.4-SNAPSHOT"
-
   lazy val reactive_core = Project(
     "reactive-core",
     file("reactive-core"),
@@ -57,20 +56,13 @@ object ReactiveBuild extends Build {
     "reactive-web",
     file("reactive-web"),
     settings = publishingDefaults ++ Seq(
-      pomExtra := pom("reactive-web", "FRP-based abstractions for Ajax and Comet"),
-      libraryDependencies ++= Seq(
-        "javax.servlet" % "servlet-api" % "2.5" % "test",
-        "net.liftweb" %% "lift-testkit" % liftVersion,
-        "net.liftweb" %% "lift-webkit" % liftVersion
-      )
+      pomExtra := pom("reactive-web", "FRP-based abstractions for Ajax and Comet")
     )
   ) dependsOn(reactive_core) aggregate(reactive_core)
   lazy val reactive_web_demo = Project(
     "reactive-web-demo",
     file("reactive-web-demo"),
-    settings = defaults ++ webSettings ++ Seq(
-      libraryDependencies += ("org.mortbay.jetty" % "jetty" % "6.1.26" % "container,test"),
-      scanDirectories in Compile := Nil,
+    settings = defaults ++ Seq(
       publishArtifact := false
     )
   ) dependsOn(reactive_web) aggregate(reactive_web)

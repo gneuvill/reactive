@@ -21,7 +21,7 @@ class SignalTests extends FunSuite with ShouldMatchers with CollectEvents {
     val aVar = Var(3)
     val vals = List(Val(1), Val(2), aVar)
     val parent = Var(0)
-    val flatMapped = parent.flatMap[Int, Signal](vals)
+    val flatMapped = parent.flatMap(vals)
 
     collecting(flatMapped.change) {
       flatMapped.now should equal (1)
@@ -40,13 +40,13 @@ class SignalTests extends FunSuite with ShouldMatchers with CollectEvents {
     } should equal (List(2, 3, 4, 1))
   }
 
-  test("flatMap (T=>SeqSignal[U])") {
+  ignore("flatMap (T=>SeqSignal[U])") {   //TODO is there any value in any part of this test after the new way of transforming SeqSignals?
     val bufSig1 = BufferSignal(1, 2, 3)
     val bufSig2 = BufferSignal(2, 3, 4)
     val parent = Var(false)
-    val flatMapped: SeqSignal[Int] = parent.flatMap { b: Boolean =>
+    val flatMapped = SeqSignal(parent.flatMap { b: Boolean =>
       if (!b) bufSig1 else bufSig2
-    }
+    })
 
     flatMapped.now should equal (Seq(1, 2, 3))
 
@@ -73,25 +73,23 @@ class SignalTests extends FunSuite with ShouldMatchers with CollectEvents {
         parent () = false
         flatMapped.now should equal (Seq(1, 2, 3))
       } should equal (List(List(1, 2, 3)))
-
     }.toBatch.applyToSeq(List(2, 3, 4, 5)) should equal (List(1, 2, 3))
-
   }
 
-  test("flatMap(value => seqSignal.map(_ filter pred))") {
+  ignore("flatMap(value => seqSignal.map(_ filter pred))") {  //TODO is there any value in any part of this test after the new way of transforming SeqSignals?
     val switch = Var(false)
     val numbers = BufferSignal(1, 2, 3, 4, 5)
     val filteredNumbers = numbers.map(_ filter (_ < 3))
-    val flatMapped = switch.flatMap {
+    val flatMapped = SeqSignal(switch.flatMap {
       case false => numbers
       case true  => filteredNumbers
-    }
+    })
 
-    numbers.now.baseDeltas should equal (Seq(
+    SeqDelta.flatten(numbers.now.fromDelta :: Nil) should equal (List(
       Include(0, 1), Include(1, 2), Include(2, 3), Include(3, 4), Include(4, 5)
     ))
-    filteredNumbers.now.baseDeltas should equal (Seq(
-      Remove(2, 3), Remove(2, 4), Remove(2, 5)
+    filteredNumbers.now.fromDelta should equal (Batch(
+      Include(0, 1), Include(1, 2)
     ))
 
     collecting(flatMapped.deltas) {
@@ -101,6 +99,15 @@ class SignalTests extends FunSuite with ShouldMatchers with CollectEvents {
         Remove(2, 3), Remove(2, 4), Remove(2, 5)
       )
     ))
+  }
+
+  test("flatMap(value => EventStream)") {
+    val s = Var(10)
+    val es = new EventSource[Int]
+    val fm = s.flatMap(x => es.map(x*))
+    collecting(fm){ es fire 3 } should equal(List(30))
+    collecting(fm){ s () = 20 } should equal (Nil)
+    collecting(fm){ es fire 4 } should equal (List(80))
   }
 
   test("distinct") {
